@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1040656725748",
+    "project_id": "apphotel-5133c",
+    "storage_bucket": "apphotel-5133c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1040656725748:android:06314d730e3f7fdebc10a1",
+        "android_client_info": {
+          "package_name": "com.example.gestionusuarios"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCEaYR6IGXacqPC3lwh5JdOG5FWmaZI3Dk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
