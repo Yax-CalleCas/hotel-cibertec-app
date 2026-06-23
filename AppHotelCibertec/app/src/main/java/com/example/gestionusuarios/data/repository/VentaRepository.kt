@@ -6,6 +6,7 @@ import com.example.gestionusuarios.data.local.entity.DetalleVentaEntity
 import com.example.gestionusuarios.data.local.entity.VentaEntity
 import com.example.gestionusuarios.data.remote.api.VentaService
 import com.example.gestionusuarios.data.remote.model.VentaDto
+import com.example.gestionusuarios.data.local.UiState.VentaConDetalles
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
@@ -15,31 +16,82 @@ class VentaRepository(
     private val ventaDao: VentaDao
 ) {
 
+    // --- MÉTODOS REQUERIDOS POR EL VIEWMODEL ---
+
+    // Este es el que usa ventasLocales en tu ViewModel
+    fun obtenerVentasLocales(): Flow<List<VentaEntity>> = ventaDao.obtenerVentas()
+
+    // Este es el que usa cargarVentasPorRecepcion en tu ViewModel
+    suspend fun listarPorRecepcion(idRecepcion: Int): List<VentaDto> = withContext(Dispatchers.IO) {
+        try {
+            val response = ventaService.listarPorRecepcion(idRecepcion)
+            response.body()?.data ?: emptyList()
+        } catch (e: Exception) {
+            Log.e("VentaRepository", "Error en listarPorRecepcion: ${e.message}")
+            emptyList()
+        }
+    }
+
+    // --- LÓGICA DE SINCRONIZACIÓN OFFLINE-FIRST ---
+
+    fun obtenerVentasPorRecepcion(idRecepcion: Int): Flow<List<VentaConDetalles>> {
+        return ventaDao.obtenerVentasCompletasPorRecepcion(idRecepcion)
+    }
+
+    suspend fun sincronizarVentasConServidor(idRecepcion: Int) = withContext(Dispatchers.IO) {
+        try {
+            val response = ventaService.listarPorRecepcion(idRecepcion)
+            if (response.isSuccessful && response.body()?.data != null) {
+                val listaDtos = response.body()!!.data!!
+
+                listaDtos.forEach { dto ->
+                    val idVenta = dto.idVenta ?: 0
+                    val ventaEntity = VentaEntity(
+                        idVenta = idVenta,
+                        idRecepcion = dto.idRecepcion ?: 0,
+                        total = dto.total ?: 0.0,
+                        estado = dto.estado ?: "PENDIENTE"
+                    )
+                    val detalles = dto.detalles?.map { d ->
+                        DetalleVentaEntity(
+                            idVenta = idVenta,
+                            idProducto = d.idProducto,
+                            nombreProducto = d.nombreProducto,
+                            cantidad = d.cantidad ?: 0,
+                            precioUnitario = d.precioUnitario ?: 0.0,
+                            subTotal = d.subTotal ?: 0.0
+                        )
+                    } ?: emptyList()
+
+                    ventaDao.guardarVentaConDetalles(ventaEntity, detalles)
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("VentaRepository", "Fallo sincronización: ${e.message}")
+        }
+    }
+
     suspend fun registrarVenta(ventaDto: VentaDto): Boolean = withContext(Dispatchers.IO) {
         try {
             val response = ventaService.registrarVenta(ventaDto)
 
             if (response.isSuccessful && response.body()?.success == true) {
-                val data = response.body()?.data
-                val idVentaGenerado = data?.idVenta ?: 0
+                val data = response.body()?.data ?: return@withContext false
+                val idVenta = data.idVenta ?: 0
 
-                // Validación crítica: si el servidor devuelve ID 0, el registro local es inconsistente
-                if (idVentaGenerado == 0) {
-                    Log.e("VentaRepository", "El servidor devolvió un ID de venta inválido (0)")
-                    return@withContext false
-                }
-
+                // 1. Crear entidad Venta
                 val ventaEntity = VentaEntity(
-                    idVenta = idVentaGenerado,
-                    idRecepcion = ventaDto.idRecepcion ?: 0,
-                    total = ventaDto.total ?: 0.0,
-                    estado = ventaDto.estado ?: "PENDIENTE"
+                    idVenta = idVenta,
+                    idRecepcion = data.idRecepcion ?: 0,
+                    total = data.total ?: 0.0,
+                    estado = data.estado ?: "PENDIENTE"
                 )
 
-                val detallesEntities = ventaDto.detalles?.map { dto ->
+                // 2. Mapear detalles asegurando el idVenta correcto
+                val detallesEntities = data.detalles?.map { dto ->
                     DetalleVentaEntity(
-                        idVenta = idVentaGenerado,
-                        idProducto = dto.idProducto ?: 0,
+                        idVenta = idVenta, // Este es el ID clave que debe coincidir
+                        idProducto = dto.idProducto,
                         nombreProducto = dto.nombreProducto ?: "Sin nombre",
                         cantidad = dto.cantidad ?: 0,
                         precioUnitario = dto.precioUnitario ?: 0.0,
@@ -47,42 +99,19 @@ class VentaRepository(
                     )
                 } ?: emptyList()
 
-                // Intentamos persistir en Room
+                // 3. Ejecutar la transacción atómica definida en tu DAO
                 ventaDao.guardarVentaConDetalles(ventaEntity, detallesEntities)
-                true
+
+                return@withContext true
             } else {
-                // El servidor respondió, pero con éxito=false o error HTTP
-                Log.e("VentaRepository", "Respuesta no exitosa: ${response.code()} - ${response.errorBody()?.string()}")
-                false
+                Log.e("VentaRepository", "API Error: ${response.code()}")
+                return@withContext false
             }
         } catch (e: Exception) {
-            Log.e("VentaRepository", "Error crítico en registrarVenta: ${e.stackTraceToString()}")
-            false
+            Log.e("VentaRepository", "Error crítico en registrarVenta", e)
+            return@withContext false
         }
     }
-
-    // --- MÉTODOS DE LECTURA (Locales) ---
-
-    fun obtenerVentasLocales(): Flow<List<VentaEntity>> = ventaDao.obtenerVentas()
-
-    suspend fun listarPorRecepcion(idRecepcion: Int): List<VentaDto> = withContext(Dispatchers.IO) {
-        try {
-            val response = ventaService.listarPorRecepcion(idRecepcion)
-            if (response.isSuccessful) {
-                response.body()?.data ?: emptyList()
-            } else {
-                Log.e("VentaRepository", "Error listando: ${response.code()}")
-                emptyList()
-            }
-        } catch (e: Exception) {
-            Log.e("VentaRepository", "Error: ${e.message}")
-            emptyList()
-        }
-    }
-
-    suspend fun obtenerVentaLocal(id: Int): VentaEntity? = ventaDao.obtenerPorId(id)
 
     suspend fun eliminarVentaLocal(venta: VentaEntity) = ventaDao.eliminar(venta)
-
-
 }

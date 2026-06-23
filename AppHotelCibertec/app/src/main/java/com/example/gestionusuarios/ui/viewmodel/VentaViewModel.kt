@@ -25,8 +25,16 @@ class VentaViewModel(
     private val _mensaje = MutableStateFlow<String?>(null)
     val mensaje: StateFlow<String?> = _mensaje.asStateFlow()
 
-    // Variable para mantener el ID de recepción actual y permitir recargas
     private var lastIdRecepcion: Int? = null
+
+    // NUEVO: Método para sincronizar la capa local desde el repositorio
+    fun sincronizarConServidor(idRecepcion: Int) {
+        viewModelScope.launch {
+            _loading.value = true
+            repository.sincronizarVentasConServidor(idRecepcion)
+            _loading.value = false
+        }
+    }
 
     fun registrarVenta(ventaDto: VentaDto, onResult: (Boolean) -> Unit) {
         viewModelScope.launch {
@@ -35,10 +43,8 @@ class VentaViewModel(
                 val success = repository.registrarVenta(ventaDto)
                 if (success) {
                     _mensaje.value = "Venta registrada correctamente"
-
-                    // FORZAR actualización de datos tras el éxito
-                    lastIdRecepcion?.let { cargarVentasPorRecepcion(it) }
-
+                    // Al registrar exitosamente, la entidad ya se guardó en Room en el repo,
+                    // por lo que ventasLocales se actualizará automáticamente.
                     onResult(true)
                 } else {
                     _mensaje.value = "Error al registrar la venta en el servidor."
@@ -58,7 +64,10 @@ class VentaViewModel(
         viewModelScope.launch {
             _loading.value = true
             try {
+                // Mantenemos tu método original
                 _ventasRemotas.value = repository.listarPorRecepcion(idRecepcion)
+                // Sincronizamos internamente con Room para mantener la persistencia
+                repository.sincronizarVentasConServidor(idRecepcion)
             } catch (e: Exception) {
                 _mensaje.value = "Error al cargar consumos: ${e.message}"
             } finally {

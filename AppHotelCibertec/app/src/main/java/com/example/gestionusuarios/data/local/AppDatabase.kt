@@ -22,7 +22,7 @@ import com.example.gestionusuarios.data.local.entity.*
         RecepcionEntity::class,
         DetalleVentaEntity::class,
     ],
-    version = 26,
+    version = 30,
     exportSchema = false
 )
 @TypeConverters(Converters::class)

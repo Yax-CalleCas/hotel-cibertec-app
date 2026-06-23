@@ -145,8 +145,14 @@ fun VentasProductosHabitaciones(
                                 val idRec = currentRecepcion?.idRecepcion ?: return@Button
                                 val detalles = carrito.map { DetalleVentaDto(null, it.idProducto, it.nombre, it.cantidad, it.precio, it.subTotal) }
                                 val nuevaVenta = VentaDto(null, idRec, totalConsumo, estadoSeleccionado, detalles)
+
                                 ventaViewModel.registrarVenta(nuevaVenta) { exito ->
-                                    if (exito) { productoViewModel.refrescarDesdeApi(); onNavigateBack() }
+                                    if (exito) {
+                                        // Al tener éxito, la base de datos local (Room) se actualiza sola.
+                                        // Simplemente limpiamos el carrito y cerramos la pantalla.
+                                        carrito.clear()
+                                        onNavigateBack()
+                                    }
                                 }
                             },
                             modifier = Modifier.weight(1f),

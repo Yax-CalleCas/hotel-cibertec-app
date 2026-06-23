@@ -11,7 +11,8 @@ import kotlinx.coroutines.flow.*
 class HabitacionViewModel(
     private val repository: HabitacionRepository,
     private val estadoRepository: EstadoHabitacionRepository,
-    private val categoriaRepository: CategoriaRepository
+    private val categoriaRepository: CategoriaRepository,
+    private val recepcionRepository: RecepcionRepository
 ) : ViewModel() {
     // NUEVO: Estado para la habitación que se está editando
     private val _habitacionEdit = MutableStateFlow<HabitacionEntity?>(null)
@@ -38,22 +39,21 @@ class HabitacionViewModel(
         sincronizar(esInicial = true)
     }
 
+
     fun clearError() { _errorMessage.value = null }
 
     fun sincronizar(esInicial: Boolean = false) {
-        // Si ya está cargando, no duplicamos trabajo
         if (_isLoading.value) return
 
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                // Ejecución secuencial o paralela simple.
-                // No necesitamos supervisorScope aquí.
                 coroutineScope {
                     val s1 = async { repository.sincronizarHabitaciones() }
                     val s2 = async { estadoRepository.sincronizarEstados() }
                     val s3 = async { categoriaRepository.sincronizarCategorias() }
-                    awaitAll(s1, s2, s3)
+                    val s4 = async { recepcionRepository.sincronizarRecepciones() } // <-- Sincroniza esto
+                    awaitAll(s1, s2, s3, s4)
                 }
             } catch (e: Exception) {
                 if (!esInicial) _errorMessage.value = "Error al sincronizar datos."
@@ -62,6 +62,8 @@ class HabitacionViewModel(
             }
         }
     }
+
+    
 
     // Método corregido para cargar la habitación
     fun cargarHabitacion(id: Int) {

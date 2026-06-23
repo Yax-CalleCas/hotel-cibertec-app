@@ -2,9 +2,10 @@ package com.example.gestionusuarios.data.local.entity
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+
 @Entity(tableName = "recepciones")
 data class RecepcionEntity(
-    @PrimaryKey val idRecepcion: Int,
+    @PrimaryKey val idRecepcion: Int, // ID único proveniente del backend
     val idCliente: Int?,
     val idHabitacion: Int?,
     val numero: String?,

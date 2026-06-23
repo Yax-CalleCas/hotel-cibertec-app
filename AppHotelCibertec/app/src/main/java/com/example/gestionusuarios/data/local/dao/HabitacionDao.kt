@@ -19,20 +19,20 @@ interface HabitacionDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertarLista(habitaciones: List<HabitacionEntity>)
 
-    /**
-     * Este método permite actualizar el estado (DISPONIBLE/OCUPADO)
-     */
     @Query("UPDATE habitacion SET idEstadoHabitacion = :nuevoIdEstado WHERE idHabitacion = :id")
     suspend fun actualizarEstadoHabitacion(id: Int?, nuevoIdEstado: Int)
+
+    // --- EL MÉTODO QUE TE FALTABA PARA EL REPOSITORIO ---
+    @Query("UPDATE habitacion SET idEstadoHabitacion = :nuevoEstado WHERE idHabitacion IN (:ids)")
+    suspend fun actualizarEstadosEnLote(ids: List<Int>, nuevoEstado: Int)
+    // ----------------------------------------------------
+
     @Query("DELETE FROM habitacion WHERE idHabitacion = :id")
     suspend fun eliminarPorId(id: Int)
 
     @Query("DELETE FROM habitacion")
     suspend fun borrarTodo()
 
-    /**
-     * Sincronización atómica.
-     */
     @Transaction
     suspend fun syncHabitaciones(nuevasHabitaciones: List<HabitacionEntity>) {
         borrarTodo()

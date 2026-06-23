@@ -60,6 +60,21 @@ class SessionManager(context: Context) {
             .apply()
     }
 
+
+    // maenjo de roles
+
+    fun saveUserRole(idTipoPersona: Int) {
+        prefs.edit()
+            .putInt("user_role", idTipoPersona)
+            .apply()
+    }
+
+    fun getUserRole(): Int {
+        // Retorna 0 si no hay rol guardado
+        return prefs.getInt("user_role", 0)
+    }
+
+
     fun getNombre(): String? = prefs.getString("user_name", null)
     /**
      * Verifica si el usuario está logueado (sin validar tiempo, útil para rutas públicas).

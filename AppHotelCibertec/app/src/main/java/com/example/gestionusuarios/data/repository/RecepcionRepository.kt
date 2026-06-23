@@ -23,40 +23,70 @@ class RecepcionRepository(
         return recepcionDao.obtenerRecepcionActivaPorHabitacion(idHabitacion)
     }
 
-    suspend fun sincronizarRecepcionActiva(idHabitacion: Int): RecepcionEntity? {
-        return try {
-            val response = recepcionService.obtenerRecepcionActiva(idHabitacion)
-            response.body()?.data?.let { dto ->
-                val entity = dto.toEntity()
-                recepcionDao.insertar(entity)
-                entity
+    /**
+     * Sincronización completa: Obtiene del servidor y actualiza Room.
+     * Ideal para llamar al iniciar la app o mediante pull-to-refresh.
+     */
+    suspend fun refrescarRecepciones() {
+        try {
+            val response = recepcionService.listarRecepciones()
+            if (response.isSuccessful && response.body()?.data != null) {
+                val listaRemota = response.body()?.data?.map { it.toEntity() } ?: emptyList()
+                recepcionDao.insertarLista(listaRemota)
             }
         } catch (e: Exception) {
-            Log.e("REPO_ERROR", "Error sincronizando: ${e.message}")
-            null
+            Log.e("REPO", "Error en refrescarRecepciones: ${e.message}")
         }
     }
 
     suspend fun registrarRecepcion(dto: RecepcionDto): Boolean {
         return try {
             val response = recepcionService.registrarRecepcion(dto)
-            val recepcionRegistrada = response.body()?.data
-
-            if (response.isSuccessful && recepcionRegistrada != null) {
-                recepcionDao.insertar(recepcionRegistrada.toEntity())
-                habitacionDao.actualizarEstadoHabitacion(
-                    recepcionRegistrada.idHabitacion,
-                    ESTADO_OCUPADO
-                )
+            if (response.isSuccessful && response.body()?.data != null) {
+                val data = response.body()!!.data!!
+                recepcionDao.insertar(data.toEntity())
+                habitacionDao.actualizarEstadoHabitacion(data.idHabitacion, ESTADO_OCUPADO)
                 return true
             }
             false
         } catch (e: Exception) {
-            Log.e("REPO_ERROR", "Error registrando recepción: ${e.message}")
+            Log.e("REPO_ERROR", "Error registrando: ${e.message}")
             false
         }
     }
 
+    /**
+     * Sincroniza todas las recepciones actuales desde el servidor.
+     * Este es el método que llamarás desde el coroutineScope en HabitacionViewModel.
+     */
+    suspend fun sincronizarRecepciones() {
+        try {
+            val response = recepcionService.listarRecepciones()
+            if (response.isSuccessful && response.body()?.data != null) {
+
+                // Filtramos manteniendo solo donde estado sea true
+                // Esto asegura que habitaciones con estado null o false (finalizadas) se ignoren
+                val listaFiltrada = response.body()!!.data!!
+                    .filter { it.estado == true }
+                    .map { it.toEntity() }
+
+                // Guardamos exclusivamente las recepciones activas en la BD
+                recepcionDao.guardarSincronizacionCompleta(listaFiltrada)
+            }
+        } catch (e: Exception) {
+            Log.e("REPO", "Error en sincronización: ${e.message}")
+        }
+    }
+    suspend fun sincronizarRecepcionActiva(idHabitacion: Int) {
+        try {
+            val response = recepcionService.obtenerRecepcionActiva(idHabitacion)
+            if (response.isSuccessful && response.body()?.data != null) {
+                recepcionDao.insertar(response.body()!!.data!!.toEntity())
+            }
+        } catch (e: Exception) {
+            Log.e("REPO", "Fallo sincronización activa: ${e.message}")
+        }
+    }
 
     suspend fun registrarSalida(
         idRecepcion: Int,
@@ -74,12 +104,11 @@ class RecepcionRepository(
         return try {
             val response = recepcionService.registrarSalida(payload)
             if (response.isSuccessful && response.body()?.success == true) {
-                // 1. Finalizar en local
                 recepcionDao.marcarComoFinalizada(idRecepcion)
-                // 2. Liberar habitación a DISPONIBLE
                 habitacionDao.actualizarEstadoHabitacion(idHabitacion, ESTADO_DISPONIBLE)
-                true
-            } else false
+                return true
+            }
+            false
         } catch (e: Exception) {
             Log.e("API_ERROR", "Error en registrarSalida: ${e.message}")
             false

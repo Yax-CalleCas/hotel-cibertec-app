@@ -2,7 +2,6 @@ package com.example.gestionusuarios.data.remote.api
 
 import com.example.gestionusuarios.data.remote.model.ApiResponse
 import com.example.gestionusuarios.data.remote.model.RecepcionDto
-import com.example.gestionusuarios.data.remote.model.SalidaRequest
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
@@ -13,9 +12,9 @@ interface RecepcionService {
 
     @GET("api/recepcion/habitacion-activa/{idHabitacion}")
     suspend fun obtenerRecepcionActiva(
-        @Path("idHabitacion")
-        idHabitacion: Int
+        @Path("idHabitacion") idHabitacion: Int
     ): Response<ApiResponse<RecepcionDto>>
+
     @POST("api/recepcion/registrar")
     suspend fun registrarRecepcion(
         @Body recepcion: RecepcionDto
@@ -26,8 +25,6 @@ interface RecepcionService {
         @Body payload: Map<String, @JvmSuppressWildcards Any>
     ): Response<ApiResponse<String>>
 
-
     @GET("api/recepcion/listar")
-    suspend fun listarRecepciones():
-            Response<ApiResponse<List<RecepcionDto>>>
+    suspend fun listarRecepciones(): Response<ApiResponse<List<RecepcionDto>>>
 }

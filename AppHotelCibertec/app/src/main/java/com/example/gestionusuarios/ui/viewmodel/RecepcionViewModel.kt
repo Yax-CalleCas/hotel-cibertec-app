@@ -24,17 +24,18 @@ class RecepcionViewModel(
 
     private var observacionJob: Job? = null
 
-    // Ahora nos suscribimos al Flow del repositorio.
-    // Cualquier cambio en Room se verá reflejado automáticamente.
     fun buscarRecepcionActiva(idHabitacion: Int) {
-        observacionJob?.cancel() // Cancelar suscripción anterior si existe
+        observacionJob?.cancel()
+
         observacionJob = viewModelScope.launch {
+            // El loading solo es necesario para la carga inicial,
+            // no para las actualizaciones reactivas posteriores.
             _loading.value = true
 
-            // Intentar sincronizar primero (asegurar datos frescos del servidor)
-            repository.sincronizarRecepcionActiva(idHabitacion)
+            // Sincronización en background
+            launch { repository.sincronizarRecepcionActiva(idHabitacion) }
 
-            // Suscribirse a los cambios locales en Room
+            // Observación de la SSOT (Room)
             repository.obtenerRecepcionActiva(idHabitacion)
                 .collect { entity ->
                     _recepcion.value = entity
@@ -47,37 +48,21 @@ class RecepcionViewModel(
         viewModelScope.launch {
             _loading.value = true
             val success = repository.registrarRecepcion(dto)
-            if (success) {
-                _mensaje.value = "Reserva registrada con éxito."
-            } else {
-                _mensaje.value = "Error al registrar la reserva."
-            }
+            _mensaje.value = if (success) "Reserva registrada con éxito." else "Error al registrar la reserva."
             onResult(success)
             _loading.value = false
         }
     }
 
-    fun registrarSalida(
-        idRecepcion: Int,
-        idHabitacion: Int,
-        penalidad: Double,
-        total: Double,
-        onResult: (Boolean) -> Unit
-    ) {
+    fun registrarSalida(idRecepcion: Int, idHabitacion: Int, penalidad: Double, total: Double, onResult: (Boolean) -> Unit) {
         viewModelScope.launch {
             _loading.value = true
             val success = repository.registrarSalida(idRecepcion, idHabitacion, penalidad, total)
-            if (success) {
-                _mensaje.value = "Salida registrada y habitación liberada."
-            } else {
-                _mensaje.value = "Error al procesar la salida."
-            }
+            _mensaje.value = if (success) "Salida registrada." else "Error al procesar la salida."
             onResult(success)
             _loading.value = false
         }
     }
 
-    fun limpiarMensaje() {
-        _mensaje.value = null
-    }
+    fun limpiarMensaje() { _mensaje.value = null }
 }

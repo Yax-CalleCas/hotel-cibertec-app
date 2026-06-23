@@ -72,6 +72,8 @@ class MainActivity : ComponentActivity() {
                         pisoRepository = PisoRepository(RetrofitClient.createService(PisoService::class.java), db.pisoDao()),
                         ventaRepository = VentaRepository(RetrofitClient.createService(VentaService::class.java), db.ventaDao()),
                         sessionManager = sessionManager,
+                        // Asumiendo que 'db' es tu instancia de tu clase que extiende RoomDatabase
+                        // En tu inyección de dependencias o clase de configuración:
                         recepcionRepository = RecepcionRepository(
                             recepcionService = RetrofitClient.createService(RecepcionService::class.java),
                             recepcionDao = db.recepcionDao(),

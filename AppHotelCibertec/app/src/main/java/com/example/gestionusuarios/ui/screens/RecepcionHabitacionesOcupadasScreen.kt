@@ -25,13 +25,14 @@ fun ListaHabitacionesOcupadasScreen(
     habitacionViewModel: HabitacionViewModel,
     onHabitacionClick: (Int) -> Unit
 ) {
-    // Observamos los estados actualizados
+    // Observamos los datos desde el ViewModel
     val habitaciones by habitacionViewModel.habitaciones.collectAsStateWithLifecycle()
     val isLoading by habitacionViewModel.isLoading.collectAsStateWithLifecycle()
 
-    val ocupadas = habitaciones.filter { it.idEstadoHabitacion == 2 }
+    // Filtramos localmente para mantener la reactividad sin lógica de negocio en la UI
+    val ocupadas = remember(habitaciones) { habitaciones.filter { it.idEstadoHabitacion == 2 } }
 
-    // Sincronización automática al entrar
+    // Sincronización inicial al cargar la pantalla
     LaunchedEffect(Unit) {
         habitacionViewModel.sincronizar()
     }
@@ -47,28 +48,26 @@ fun ListaHabitacionesOcupadasScreen(
             )
         }
     ) { padding ->
-        // PullToRefreshBox gestiona el gesto de deslizar hacia abajo
         PullToRefreshBox(
             isRefreshing = isLoading,
             onRefresh = { habitacionViewModel.sincronizar() },
             modifier = Modifier.fillMaxSize().padding(padding)
         ) {
-            if (ocupadas.isEmpty()) {
+            if (ocupadas.isEmpty() && !isLoading) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text(
-                        "No hay habitaciones ocupadas actualmente.",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        "No hay habitaciones ocupadas.",
+                        style = MaterialTheme.typography.bodyLarge
                     )
                 }
             } else {
                 LazyVerticalGrid(
                     columns = GridCells.Adaptive(minSize = 150.dp),
-                    modifier = Modifier.fillMaxSize().padding(16.dp),
+                    contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    items(ocupadas) { hab ->
+                    items(items = ocupadas, key = { it.idHabitacion }) { hab ->
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -77,37 +76,15 @@ fun ListaHabitacionesOcupadasScreen(
                                 containerColor = MaterialTheme.colorScheme.surfaceVariant
                             )
                         ) {
-                            Column(
-                                modifier = Modifier.padding(16.dp),
-                                horizontalAlignment = Alignment.Start
-                            ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(
-                                        Icons.Default.Bed,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.primary
-                                    )
+                                    Icon(Icons.Default.Bed, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                                     Spacer(Modifier.width(8.dp))
-                                    Text(
-                                        "Hab. ${hab.numero}",
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold
-                                    )
+                                    Text("Hab. ${hab.numero}", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                                 }
                                 Spacer(Modifier.height(8.dp))
                                 Badge(containerColor = Color(0xFFD32F2F)) {
-                                    Text(
-                                        "OCUPADA",
-                                        color = Color.White,
-                                        modifier = Modifier.padding(4.dp)
-                                    )
-                                }
-                                Spacer(Modifier.height(8.dp))
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.End
-                                ) {
-                                    Icon(Icons.Default.ChevronRight, contentDescription = "Acceder")
+                                    Text("OCUPADA", color = Color.White, modifier = Modifier.padding(4.dp))
                                 }
                             }
                         }
