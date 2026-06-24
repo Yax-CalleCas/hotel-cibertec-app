@@ -14,11 +14,9 @@ import com.example.gestionusuarios.data.local.converters.Converters // IMPORTANT
     foreignKeys = [
         ForeignKey(
             entity = EstadoHabitacionEntity::class,
-
             parentColumns = ["idEstadoHabitacion"],
             childColumns = ["idEstadoHabitacion"],
             onDelete = ForeignKey.CASCADE
-
         )
     ]
 )
@@ -28,8 +26,10 @@ data class HabitacionEntity(
     val numero: String,
     val detalle: String?,
     val precio: Double,
-    val idEstadoHabitacion: Int,
+    val idEstadoHabitacion: Int,        
+    val descripcionEstado: String?,
     val urlsImagenes: List<String>?,
     val idPiso: Int,
-    val idCategoria: Int
+    val idCategoria: Int,
+    val estado: Boolean = true
 )

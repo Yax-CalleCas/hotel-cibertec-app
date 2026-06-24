@@ -1,5 +1,6 @@
 package com.example.gestionusuarios.data.remote.api
 
+import LoginResponseDto
 import com.example.gestionusuarios.data.remote.model.*
 import retrofit2.http.*
 

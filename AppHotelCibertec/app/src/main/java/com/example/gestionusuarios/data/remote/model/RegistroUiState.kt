@@ -1,6 +1,4 @@
-package com.example.gestionusuarios.ui.screens
-
-import com.example.gestionusuarios.data.remote.model.TipoPersonaDto
+package com.example.gestionusuarios.data.remote.model
 
 data class RegistroUiState(
     val nombre: String = "",
@@ -12,4 +10,3 @@ data class RegistroUiState(
     val selectedTipo: TipoPersonaDto? = null,
     val isPasswordVisible: Boolean = false
 )
-

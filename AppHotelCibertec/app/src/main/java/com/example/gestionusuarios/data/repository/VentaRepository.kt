@@ -16,7 +16,6 @@ class VentaRepository(
     private val ventaDao: VentaDao
 ) {
 
-    // --- MÉTODOS REQUERIDOS POR EL VIEWMODEL ---
 
     // Este es el que usa ventasLocales en tu ViewModel
     fun obtenerVentasLocales(): Flow<List<VentaEntity>> = ventaDao.obtenerVentas()

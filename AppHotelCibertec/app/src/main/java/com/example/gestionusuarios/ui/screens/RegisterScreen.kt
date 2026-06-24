@@ -18,7 +18,7 @@ import androidx.compose.ui.unit.dp
 import com.example.gestionusuarios.data.remote.model.Persona
 import com.example.gestionusuarios.data.remote.model.TipoPersonaDto
 import com.example.gestionusuarios.ui.viewmodel.PersonaViewModel
-import com.example.gestionusuarios.ui.screens.RegistroUiState
+import com.example.gestionusuarios.data.remote.model.RegistroUiState
 
 
 @Composable

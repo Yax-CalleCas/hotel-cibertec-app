@@ -43,8 +43,6 @@ class VentaViewModel(
                 val success = repository.registrarVenta(ventaDto)
                 if (success) {
                     _mensaje.value = "Venta registrada correctamente"
-                    // Al registrar exitosamente, la entidad ya se guardó en Room en el repo,
-                    // por lo que ventasLocales se actualizará automáticamente.
                     onResult(true)
                 } else {
                     _mensaje.value = "Error al registrar la venta en el servidor."

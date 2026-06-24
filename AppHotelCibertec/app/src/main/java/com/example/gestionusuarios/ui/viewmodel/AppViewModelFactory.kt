@@ -29,7 +29,7 @@ class AppViewModelFactory(
             modelClass.isAssignableFrom(EstadoHabitacionViewModel::class.java) -> EstadoHabitacionViewModel(estadoRepository)
             modelClass.isAssignableFrom(PisoViewModel::class.java) -> PisoViewModel(pisoRepository)
             modelClass.isAssignableFrom(VentaViewModel::class.java) -> VentaViewModel(ventaRepository)
-            modelClass.isAssignableFrom(RecepcionViewModel::class.java) -> RecepcionViewModel(recepcionRepository)
+            modelClass.isAssignableFrom(RecepcionViewModel::class.java) -> RecepcionViewModel(recepcionRepository, sessionManager)
             modelClass.isAssignableFrom(CategoriaViewModel::class.java) -> CategoriaViewModel(categoriaRepository)
 
             else -> throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")

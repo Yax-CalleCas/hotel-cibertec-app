@@ -6,8 +6,17 @@ sealed class Routes(val route: String) {
     data object Login : Routes("login")
     data object Register : Routes("register")
     data object RegistrarCliente : Routes("registrar_cliente")
+    // Nueva ruta para el catálogo
 
-    // Asegúrate de que esta línea exista en tu archivo Routes.kt
+    data object CatalogoCliente : Routes("catalogo_cliente")
+
+    data object DetalleReserva : Routes("detalle_reserva/{habitacionId}/{numeroHabitacion}/{precioPorNoche}") {
+        fun createRoute(id: Int, numero: String, precio: Double): String {
+            val encodedNumero = java.net.URLEncoder.encode(numero, "UTF-8")
+            val formattedPrecio = String.format(java.util.Locale.US, "%.2f", precio)
+            return "detalle_reserva/$id/$encodedNumero/$formattedPrecio"
+        }
+    }
     data object RecepcionHabitacionesOcupadas : Routes("lista_ocupadas")
 
     // --- PANEL PRINCIPAL ---
@@ -48,6 +57,8 @@ sealed class Routes(val route: String) {
         fun createRoute(idHabitacion: Int) = "gestion_salidas_detalle/$idHabitacion"
     }
 
+
+
     // --- GESTIÓN DE PRODUCTOS ---
     data object ProductoList : Routes("producto_list")
     object ProductoForm : Routes("producto_form/{productoId}") {
@@ -57,8 +68,6 @@ sealed class Routes(val route: String) {
     object ProductoDetalle : Routes("producto_detalle/{productoId}") {
         fun createRoute(productoId: Int) = "producto_detalle/$productoId"
     }
-
-
 
     // --- GESTIÓN DE PERSONAS ---
     data object GestionPersonas : Routes("gestion_personas")

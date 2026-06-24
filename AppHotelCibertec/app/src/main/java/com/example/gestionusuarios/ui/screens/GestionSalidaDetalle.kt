@@ -39,13 +39,54 @@ fun GestionSalidasDetalle(
     var showDialog by remember { mutableStateOf(false) }
     var isProcessing by remember { mutableStateOf(false) }
 
-    LaunchedEffect(idHabitacion) { recepcionViewModel.buscarRecepcionActiva(idHabitacion) }
-    LaunchedEffect(recepcion?.idRecepcion) { recepcion?.idRecepcion?.let { ventaViewModel.cargarVentasPorRecepcion(it) } }
+    // --- BLOQUE DE DEPURACIÓN ---
+    LaunchedEffect(recepcion, servicios) {
+        if (recepcion != null) {
+            android.util.Log.d("DEBUG_DATA", "--- DATOS RECIBIDOS EN UI ---")
+            android.util.Log.d("DEBUG_DATA", "Habitacion: ${recepcion?.numero}")
+            android.util.Log.d("DEBUG_DATA", "Precio Inicial: ${recepcion?.precioInicial}")
+            android.util.Log.d("DEBUG_DATA", "Adelanto: ${recepcion?.adelanto}")
+            android.util.Log.d("DEBUG_DATA", "Saldo Restante: ${recepcion?.precioRestante}")
+            android.util.Log.d("DEBUG_DATA", "Total Pagado: ${recepcion?.totalPagado}")
+        } else {
+            android.util.Log.d("DEBUG_DATA", "Recepcion es NULL actualmente.")
+        }
 
+        android.util.Log.d("DEBUG_DATA", "Cantidad de servicios: ${servicios.size}")
+        servicios.forEachIndexed { index, item ->
+            android.util.Log.d("DEBUG_DATA", "Servicio $index: ${item.nombreProducto} | Subtotal: ${item.subTotal}")
+        }
+    }
+    // 1. Cargamos la recepción activa cuando el idHabitacion cambia
+    LaunchedEffect(idHabitacion) {
+        recepcionViewModel.buscarRecepcionActiva(idHabitacion)
+    }
+
+// 1. Cargamos la recepción activa cuando el idHabitacion cambia
+    LaunchedEffect(idHabitacion) {
+        recepcionViewModel.buscarRecepcionActiva(idHabitacion)
+    }
+
+    // 2. Cargamos las ventas solo cuando tenemos una recepción válida
+    // Al usar 'recepcion?.idRecepcion' como key, se dispara solo cuando el ID está presente.
+    LaunchedEffect(recepcion?.idRecepcion) {
+        val idRec = recepcion?.idRecepcion
+        if (idRec != null) {
+            ventaViewModel.cargarVentasPorRecepcion(idRec)
+        }
+    }
+
+    // 3. Cálculo del monto total usando derivedStateOf para eficiencia y reactividad.
+    // Se recalcula automáticamente si cambia recepcion, servicios o penalidadStr.
     val penalidad = penalidadStr.toDoubleOrNull() ?: 0.0
-    val totalConsumos = servicios.filter { it.estadoVenta != "PAGADO" }.sumOf { it.subTotal }
-    val totalNeto = (recepcion?.precioRestante ?: 0.0) + penalidad + totalConsumos
-    // Scroll behavior para que el TopAppBar reaccione al scroll
+    val totalNeto by remember(recepcion, servicios, penalidad) {
+        derivedStateOf {
+            val restante = recepcion?.precioRestante ?: 0.0
+            val consumos = servicios.filter { it.estadoVenta != "PAGADO" }.sumOf { it.subTotal }
+            restante + penalidad + consumos
+        }
+    }
+
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
 
     Scaffold(

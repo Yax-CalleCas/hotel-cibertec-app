@@ -1,5 +1,6 @@
 package com.example.gestionusuarios.ui.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.gestionusuarios.data.local.SessionManager
@@ -26,7 +27,8 @@ class LoginViewModel(
     private val _uiEvent = Channel<UiEvent>(Channel.BUFFERED)
     val uiEvent = _uiEvent.receiveAsFlow()
 
-    // Login tradicional
+    private val TAG = "DEBUG_VM_COMPLETO"
+
     fun iniciarSesion(correo: String, clave: String) {
         if (correo.isBlank() || clave.isBlank()) {
             sendEvent(UiEvent.ShowSnackbar("Por favor, complete todos los campos"))
@@ -41,9 +43,20 @@ class LoginViewModel(
                 }
 
                 result.onSuccess { response ->
-                    // PERSISTENCIA: Guardamos los datos antes de pasar a Success
                     sessionManager.saveToken(response.token)
                     sessionManager.saveUserData(response.nombre, response.apellido)
+
+                    // GUARDADO DEL ID PERSONA
+                    response.idPersona?.let { id ->
+                        Log.d(TAG, "Guardando ID persona: $id")
+                        sessionManager.saveIdPersona(id)
+                    }
+
+                    // GUARDADO DEL ROL
+                    response.idTipoPersona?.let { rol ->
+                        Log.d(TAG, "Guardando ROL en SessionManager: $rol")
+                        sessionManager.saveUserRole(rol)
+                    } ?: Log.e(TAG, "¡ERROR! idTipoPersona es NULL.")
 
                     _uiState.value = LoginUiState.Success(response)
                     sendEvent(UiEvent.ShowSnackbar("Bienvenido, ${response.nombre}"))
@@ -53,18 +66,12 @@ class LoginViewModel(
                 }
             } catch (e: Exception) {
                 _uiState.value = LoginUiState.Idle
-                sendEvent(UiEvent.ShowSnackbar("Error de conexión: ${e.message}"))
+                sendEvent(UiEvent.ShowSnackbar("Error: ${e.message}"))
             }
         }
     }
 
-    // Login Social
     fun validarUsuarioEnBackend(token: String, nombre: String, apellido: String, email: String) {
-        if (token.isBlank() || email.isBlank()) {
-            sendEvent(UiEvent.ShowSnackbar("Datos incompletos de la red social"))
-            return
-        }
-
         viewModelScope.launch {
             _uiState.value = LoginUiState.Loading
             try {
@@ -73,19 +80,28 @@ class LoginViewModel(
                 }
 
                 result.onSuccess { response ->
-                    // PERSISTENCIA: Guardamos los datos para el login social
                     sessionManager.saveToken(response.token)
                     sessionManager.saveUserData(response.nombre, response.apellido)
 
+                    // GUARDADO DEL ID PERSONA EN LOGIN SOCIAL
+                    response.idPersona?.let { id ->
+                        Log.d(TAG, "Guardando ID persona social: $id")
+                        sessionManager.saveIdPersona(id)
+                    }
+
+                    // GUARDADO DEL ROL
+                    response.idTipoPersona?.let { rol ->
+                        Log.d(TAG, "Guardando ROL social: $rol")
+                        sessionManager.saveUserRole(rol)
+                    } ?: Log.e(TAG, "¡ERROR! idTipoPersona es NULL en login social.")
+
                     _uiState.value = LoginUiState.Success(response)
-                    sendEvent(UiEvent.ShowSnackbar("Bienvenido, ${response.nombre}"))
                 }.onFailure { error ->
                     _uiState.value = LoginUiState.Idle
-                    sendEvent(UiEvent.ShowSnackbar(error.message ?: "Error al sincronizar con tu servidor"))
+                    sendEvent(UiEvent.ShowSnackbar("Error en login social"))
                 }
             } catch (e: Exception) {
                 _uiState.value = LoginUiState.Idle
-                sendEvent(UiEvent.ShowSnackbar("Error: ${e.message}"))
             }
         }
     }

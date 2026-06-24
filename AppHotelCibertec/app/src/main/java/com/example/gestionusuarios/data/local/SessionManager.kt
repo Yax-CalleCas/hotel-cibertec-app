@@ -21,70 +21,64 @@ class SessionManager(context: Context) {
                 EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
             )
         } catch (e: Exception) {
-            Log.e("SessionManager", "Error al inicializar EncryptedSharedPreferences", e)
+            Log.e("SessionManager", "Error al inicializar EncryptedSharedPreferences, usando fallback", e)
             context.getSharedPreferences("fallback_prefs", Context.MODE_PRIVATE)
         }
     }
 
-    /**
-     * Guarda el token y el momento exacto del login para control de tiempo.
-     */
     fun saveToken(token: String) {
         prefs.edit()
             .putString("token", token)
             .putLong("login_time", System.currentTimeMillis())
             .apply()
     }
-
+//token de la sesion
     fun getToken(): String? = prefs.getString("token", null)
 
-    /**
-     * Verifica si el token existe y si está dentro del margen de 30 segundos.
-     */
     fun isSessionValid(): Boolean {
         val token = getToken()
         if (token.isNullOrBlank()) return false
 
-        val loginTime = prefs.getLong("login_time", 0)
+        val loginTime = prefs.getLong("login_time", 0L)
         val currentTime = System.currentTimeMillis()
-        val sessionDuration = 30 * 1000 // 30,000 ms = 30 segundos
+        val sessionDuration = 24 * 60 * 60 * 1000L // 24 horas
 
         return (currentTime - loginTime) < sessionDuration
     }
 
-
-    // En SessionManager.kt
     fun saveUserData(nombre: String, apellido: String) {
         prefs.edit()
             .putString("user_name", "$nombre $apellido")
             .apply()
     }
-
-
-    // maenjo de roles
+    //nombre del usuario
+    fun getNombre(): String? = prefs.getString("user_name", null)
 
     fun saveUserRole(idTipoPersona: Int) {
+        Log.d("DEBUG_SESSION", "Guardando rol: $idTipoPersona")
         prefs.edit()
             .putInt("user_role", idTipoPersona)
             .apply()
     }
 
     fun getUserRole(): Int {
-        // Retorna 0 si no hay rol guardado
-        return prefs.getInt("user_role", 0)
+        val rol = prefs.getInt("user_role", 0)
+        Log.d("DEBUG_SESSION", "Recuperando rol: $rol")
+        return rol
     }
 
+    fun isLoggedIn(): Boolean {
+        val tokenExists = !getToken().isNullOrBlank()
+        val valid = isSessionValid()
+        return tokenExists && valid
+    }
+    //reservas
+    fun getIdPersona(): Int = prefs.getInt("id_persona", 0)
+    fun saveIdPersona(id: Int) = prefs.edit().putInt("id_persona", id).apply()
 
-    fun getNombre(): String? = prefs.getString("user_name", null)
-    /**
-     * Verifica si el usuario está logueado (sin validar tiempo, útil para rutas públicas).
-     */
-    fun isLoggedIn(): Boolean = !getToken().isNullOrBlank()
-
-    /**
-     * Borra todo el contenido de la sesión.
-     */
+   //cerrar sesion
     fun clearSession() {
         prefs.edit().clear().apply()
     }
 }
+

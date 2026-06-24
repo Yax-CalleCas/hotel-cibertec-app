@@ -7,17 +7,22 @@ import com.example.gestionusuarios.data.local.entity.RecepcionEntity
 import com.example.gestionusuarios.data.remote.api.RecepcionService
 import com.example.gestionusuarios.data.remote.model.RecepcionDto
 import com.example.gestionusuarios.data.local.mapper.toEntity
+import com.example.gestionusuarios.data.remote.model.Persona
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.withContext
 
 class RecepcionRepository(
     private val recepcionService: RecepcionService,
     private val recepcionDao: RecepcionDao,
-    private val habitacionDao: HabitacionDao
+    private val personRepository: PersonRepository,
+    private val habitacionDao: HabitacionDao,
 ) {
     private val ESTADO_OCUPADO = 2
     private val ESTADO_DISPONIBLE = 1
-
-    val todasLasRecepciones: Flow<List<RecepcionEntity>> = recepcionDao.obtenerRecepciones()
 
     fun obtenerRecepcionActiva(idHabitacion: Int): Flow<RecepcionEntity?> {
         return recepcionDao.obtenerRecepcionActivaPorHabitacion(idHabitacion)
@@ -112,6 +117,47 @@ class RecepcionRepository(
         } catch (e: Exception) {
             Log.e("API_ERROR", "Error en registrarSalida: ${e.message}")
             false
+        }
+    }
+
+
+
+    /**
+     * Obtiene las reservas del cliente como un flujo reactivo (SSOT).
+     */
+    fun obtenerMisReservas(idCliente: Int): Flow<List<RecepcionEntity>> {
+        return recepcionDao.obtenerMisReservas(idCliente)
+    }
+
+    // Dentro de RecepcionRepository
+    suspend fun obtenerDatosCliente(idCliente: Int): Persona? {
+        return try {
+            val response = personRepository.buscarPersona(idCliente)
+            if (response.success && response.data != null) {
+                response.data
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            Log.e("REPO", "Error buscando persona: ${e.message}")
+            null
+        }
+    }
+
+
+
+    // 3. Sincronizar (Actualizar la lista completa desde el servidor)
+    suspend fun sincronizarMisReservas(idCliente: Int) {
+        withContext(Dispatchers.IO) {
+            try {
+                val response = recepcionService.listarRecepciones()
+                if (response.isSuccessful && response.body()?.data != null) {
+                    val lista = response.body()!!.data!!.map { it.toEntity() }
+                    recepcionDao.guardarSincronizacionCompleta(lista)
+                }
+            } catch (e: Exception) {
+                // Manejo de error silencioso o log
+            }
         }
     }
 }

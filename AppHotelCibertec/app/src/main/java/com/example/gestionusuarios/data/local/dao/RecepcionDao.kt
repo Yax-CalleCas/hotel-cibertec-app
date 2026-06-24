@@ -10,12 +10,15 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface RecepcionDao {
-    // En RecepcionDao
-    @Query("SELECT * FROM recepciones WHERE estado = 'ACTIVO' OR estado = 'OCUPADO'")
+
+    // Estandarizado: 1 = Activo/Ocupado, 0 = Finalizado
+    @Query("SELECT * FROM recepciones WHERE estado = 1")
     fun obtenerRecepciones(): Flow<List<RecepcionEntity>>
+
     @Query("SELECT * FROM recepciones WHERE idHabitacion = :idHabitacion AND estado = 1 LIMIT 1")
     fun obtenerRecepcionActivaPorHabitacion(idHabitacion: Int): Flow<RecepcionEntity?>
 
+    // Actualiza o inserta sin borrar el resto de la tabla
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertarLista(recepciones: List<RecepcionEntity>)
 
@@ -34,10 +37,17 @@ interface RecepcionDao {
     @Query("SELECT COUNT(*) FROM recepciones WHERE estado = 1")
     suspend fun contarRecepcionesActivas(): Int
 
+    /**
+     * Sincronización Segura:
+     * En lugar de eliminar todo, actualizamos masivamente.
+     * Si necesitas borrar solo lo que no vino del servidor,
+     * eso requiere una lógica más compleja (DiffUtil de BD).
+     */
     @Transaction
     suspend fun guardarSincronizacionCompleta(recepciones: List<RecepcionEntity>) {
-        // Es vital eliminar lo anterior si el servidor es la fuente de verdad absoluta
-        eliminarTodo()
         insertarLista(recepciones)
     }
+
+    @Query("SELECT * FROM recepciones WHERE idCliente = :idCliente ORDER BY fechaEntrada DESC")
+    fun obtenerMisReservas(idCliente: Int): Flow<List<RecepcionEntity>>
 }

@@ -15,28 +15,24 @@ fun RecepcionDto.toEntity() = RecepcionEntity(
     categoriaNombre = this.categoriaNombre,
     pisoNombre = this.pisoNombre,
     detalleHabitacion = this.detalleHabitacion,
-    precioHabitacion = this.precioHabitacion,
+    precioHabitacion = this.precioHabitacion ?: 0.0,
     estadoHabitacion = this.estadoHabitacion,
     tipoDocumento = this.tipoDocumento,
     documento = this.documento,
     nombre = this.nombre,
     apellido = this.apellido,
     correo = this.correo,
-    precioInicial = this.precioInicial,
-    adelanto = this.adelanto,
-    precioRestante = this.precioRestante,
-    totalPagado = this.totalPagado,
-    costoPenalidad = this.costoPenalidad,
+    precioInicial = this.precioInicial ?: 0.0,
+    adelanto = this.adelanto ?: 0.0,
+    precioRestante = this.precioRestante ?: 0.0,
+    totalPagado = this.totalPagado ?: 0.0,
+    costoPenalidad = this.costoPenalidad ?: 0.0,
     fechaEntrada = this.fechaEntrada,
     fechaSalida = this.fechaSalida,
     fechaSalidaConfirmacion = this.fechaSalidaConfirmacion,
     observacion = this.observacion,
-    // AQUÍ ESTABA EL POSIBLE ERROR: Si el backend envía false,
-    // estabas forzando 'true' siempre.
     estado = this.estado ?: false
 )
-
-// RecepcionMapper.kt (o el archivo donde manejes tus mappers)
 
 fun VentaDto.toEntity() = VentaEntity(
     idVenta = this.idVenta ?: 0,
@@ -53,3 +49,32 @@ fun DetalleVentaDto.toEntity(ventaId: Int) = DetalleVentaEntity(
     precioUnitario = this.precioUnitario ?: 0.0,
     subTotal = this.subTotal ?: 0.0
 )
+
+fun crearDtoReserva(idCliente: Int, idHabitacion: Int): RecepcionDto {
+    return RecepcionDto(
+        idRecepcion = null,
+        idCliente = idCliente,
+        idHabitacion = idHabitacion,
+        numero = null,
+        categoriaNombre = null,
+        pisoNombre = null,
+        detalleHabitacion = null,
+        precioHabitacion = null,
+        estadoHabitacion = null,
+        tipoDocumento = null,
+        documento = null,
+        nombre = null,
+        apellido = null,
+        correo = null,
+        precioInicial = null,
+        adelanto = null,
+        precioRestante = null,
+        totalPagado = null,
+        costoPenalidad = null,
+        fechaEntrada = null,
+        fechaSalida = null,
+        fechaSalidaConfirmacion = null,
+        observacion = null,
+        estado = false
+    )
+}

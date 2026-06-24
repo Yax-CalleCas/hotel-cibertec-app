@@ -9,7 +9,6 @@ class ProductoRepository(
     private val api: ProductoService,
     private val dao: ProductoDao
 ) {
-    // La UI observa este Flow, que es la única fuente de verdad (Room)
     fun getProductos() = dao.obtenerProductosActivos()
 
     // Sincronización completa: Limpia y actualiza todo desde el servidor

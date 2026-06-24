@@ -1,10 +1,10 @@
 package com.example.gestionusuarios.ui.viewmodel
 
+import LoginResponseDto
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.gestionusuarios.data.local.SessionManager
 import com.example.gestionusuarios.data.local.mapper.toDomain
-import com.example.gestionusuarios.data.remote.model.LoginResponseDto
 import com.example.gestionusuarios.data.repository.PersonRepository
 import com.example.gestionusuarios.data.remote.model.Persona
 import com.example.gestionusuarios.data.remote.model.TipoPersonaDto

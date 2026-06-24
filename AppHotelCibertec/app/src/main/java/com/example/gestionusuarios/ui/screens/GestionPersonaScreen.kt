@@ -242,8 +242,8 @@ fun GestionPersonaScreen(
                 }
             }
         )
-        }
     }
+}
 @Composable
 fun PersonaItem(
     persona: com.example.gestionusuarios.data.remote.model.Persona,

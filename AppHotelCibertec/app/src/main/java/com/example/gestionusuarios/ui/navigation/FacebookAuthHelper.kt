@@ -5,9 +5,8 @@ import com.facebook.FacebookCallback
 import com.facebook.FacebookException
 import com.facebook.login.LoginResult
 
-// FacebookAuthHelper.kt
 class FacebookAuthHelper(
-    val callbackManager: CallbackManager, // Recibe el manager desde fuera
+    val callbackManager: CallbackManager,
     private val onResult: (String) -> Unit,
     private val onError: (String) -> Unit
 ) {

@@ -60,10 +60,22 @@ class MainActivity : ComponentActivity() {
                 val sessionManager = remember { SessionManager(this) }
                 val db = remember { AppDatabase.getDatabase(this) }
 
+                val personRepository = remember {
+                    PersonRepository(RetrofitClient.createService(PersonaService::class.java), db.personaDao())
+                }
+
+                val recepcionRepository = remember {
+                    RecepcionRepository(
+                        recepcionService = RetrofitClient.createService(RecepcionService::class.java),
+                        recepcionDao = db.recepcionDao(),
+                        personRepository = personRepository, // <-- Ahora es reconocido
+                        habitacionDao = db.habitacionDao()
+                    )
+                }
                 // 3. Factory de ViewModels
                 val factory = remember {
                     AppViewModelFactory(
-                        loginRepository = LoginRepository(RetrofitClient.createService(LoginService::class.java), sessionManager),
+                        loginRepository = LoginRepository(RetrofitClient.createService(LoginService::class.java)),
                         personRepository = PersonRepository(RetrofitClient.createService(PersonaService::class.java), db.personaDao()),
                         productoRepository = ProductoRepository(RetrofitClient.createService(ProductoService::class.java), db.productoDao()),
                         habitacionRepository = HabitacionRepository(RetrofitClient.createService(HabitacionService::class.java), db.habitacionDao()),
@@ -72,14 +84,13 @@ class MainActivity : ComponentActivity() {
                         pisoRepository = PisoRepository(RetrofitClient.createService(PisoService::class.java), db.pisoDao()),
                         ventaRepository = VentaRepository(RetrofitClient.createService(VentaService::class.java), db.ventaDao()),
                         sessionManager = sessionManager,
-                        // Asumiendo que 'db' es tu instancia de tu clase que extiende RoomDatabase
-                        // En tu inyección de dependencias o clase de configuración:
+
                         recepcionRepository = RecepcionRepository(
                             recepcionService = RetrofitClient.createService(RecepcionService::class.java),
                             recepcionDao = db.recepcionDao(),
+                            personRepository = personRepository,
                             habitacionDao = db.habitacionDao()
-                        )
-                    )
+                        ))
                 }
 
                 // 4. Inyección de dependencias y navegación

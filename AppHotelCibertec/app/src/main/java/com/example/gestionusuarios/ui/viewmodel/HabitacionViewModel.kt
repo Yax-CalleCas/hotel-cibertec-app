@@ -40,7 +40,9 @@ class HabitacionViewModel(
     }
 
 
-    fun clearError() { _errorMessage.value = null }
+    fun clearError() {
+        _errorMessage.value = null
+    }
 
     fun sincronizar(esInicial: Boolean = false) {
         if (_isLoading.value) return
@@ -52,7 +54,8 @@ class HabitacionViewModel(
                     val s1 = async { repository.sincronizarHabitaciones() }
                     val s2 = async { estadoRepository.sincronizarEstados() }
                     val s3 = async { categoriaRepository.sincronizarCategorias() }
-                    val s4 = async { recepcionRepository.sincronizarRecepciones() } // <-- Sincroniza esto
+                    val s4 =
+                        async { recepcionRepository.sincronizarRecepciones() } // <-- Sincroniza esto
                     awaitAll(s1, s2, s3, s4)
                 }
             } catch (e: Exception) {
@@ -63,7 +66,6 @@ class HabitacionViewModel(
         }
     }
 
-    
 
     // Método corregido para cargar la habitación
     fun cargarHabitacion(id: Int) {
@@ -105,4 +107,20 @@ class HabitacionViewModel(
             }
         }
     }
+
+    //
+// En tu HabitacionViewModel.kt
+
+    // Filtramos las habitaciones que están disponibles (ejemplo: estado = 1 o disponible)
+// Ajusta '1' al ID que represente "DISPONIBLE" en tu base de datos
+    // Asumiendo que tu HabitacionEntity tiene un campo 'idEstadoHabitacion' o 'descripcionEstado'
+    val habitacionesDisponibles: StateFlow<List<HabitacionEntity>> = habitaciones
+        .map { lista ->
+            // Filtramos donde la descripción sea "DISPONIBLE"
+            // (o usa el ID si sabes cuál es el ID de disponible, ej: it.idEstadoHabitacion == 1)
+            lista.filter {
+                it.descripcionEstado?.equals("DISPONIBLE", ignoreCase = true) == true
+            }
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 }

@@ -71,7 +71,6 @@ fun MainScreen(onLogout: () -> Unit) {
             modifier = Modifier.padding(paddingValues)
         ) {
             composable(Routes.Home.route) {
-                // AQUÍ ES DONDE PASAS EL CALLBACK AL HOMESCREEN
                 HomeScreen(
                     navController = internalNavController,
                     viewModel = viewModel(factory = factory),

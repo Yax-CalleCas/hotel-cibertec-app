@@ -5,7 +5,7 @@ import androidx.room.PrimaryKey
 
 @Entity(tableName = "recepciones")
 data class RecepcionEntity(
-    @PrimaryKey val idRecepcion: Int, // ID único proveniente del backend
+    @PrimaryKey val idRecepcion: Int,
     val idCliente: Int?,
     val idHabitacion: Int?,
     val numero: String?,
